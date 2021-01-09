@@ -6,6 +6,7 @@
 typedef struct node{
 	int counter;
 	char fileName[100];
+	char fileContent[20000];
 	struct node* sibling;
 	struct node* child;
 	struct node* parent;
@@ -14,13 +15,14 @@ typedef struct node{
 	node* FIRST = NULL;
 
 
-node* createNewNode(int counter, char* fileName){
+node* createNewNode(int counter, char* fileContent, char* fileName){
 	node* newNode = (node*)malloc(sizeof(node));
 	newNode->degree = 0;
 	newNode->child = NULL;
 	newNode->parent = NULL;
 	newNode->sibling = NULL;
 	newNode->counter = counter;
+	strcpy(newNode->fileContent, fileContent);
 	strcpy(newNode->fileName, fileName);
 	return newNode;
 }
@@ -160,11 +162,11 @@ node* findLastSibling(node* bhNode){
 node* popmax(node* FIRST){
 	static int count = 1;
 	if(FIRST->child == NULL){
-			printf("%d:\t%s - %d\n", count++, FIRST->fileName, FIRST->counter);
+			printf("%d:\tFile Name: %s | Occurences: %d\n", count++, FIRST->fileName, FIRST->counter);
 			return NULL;
 	}
 	node* maxNode = findMax(FIRST);
-	printf("%d:\t%s - %d\n", count++, maxNode->fileName, maxNode->counter);
+	printf("%d:\tFile Name: %s | Occurences: %d\n", count++, maxNode->fileName, maxNode->counter);
 	node* prev = NULL;
 	node* current = FIRST;
 	node* next = FIRST->sibling;
@@ -248,32 +250,40 @@ int main(void)
         return 0; 
     } 
   
-
+	int fileCounter = 0;
     while ((de = readdir(dr)) != NULL){
     	
 	    if ( !(!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) )	{
 		    char directory[60] = "./files/";
-		    /*printf("%s\n", de->d_name); */
 			strcat(directory, de->d_name);
-			/*printf("%s\n", directory);*/
 			FILE* fp = fopen(directory, "r");
-			char buff[255];
+			char buff[2];
+			buff[1] = '\0';
 			int counter = 0;
-			while(fscanf(fp, "%s", buff)!=EOF){  
-				
-				toLowerCase(word);
-		   		toLowerCase(buff);
-		   	
-				if(strcmp(buff, word) == 0){
-		   			counter++; /* counting word occurences*/
-				}
+			fileCounter++;
+			char* fileContent = (char*)calloc(20000,sizeof(char));
+			while(!feof(fp)){  
+				buff[0] = fgetc(fp);
+				buff[0] = tolower(buff[0]);
+				strcat(fileContent, buff);
 		   				
 	   		}
+	   		/*printf("%s -> %s\n",de->d_name, fileContent);*/
+	   		char* strPurge = strtok(fileContent, " *:,.!?\\/\"\n\t()");
+	   		
+	   		while(strPurge != NULL){
+	   			
+				if(strcmp(strPurge, word) == 0){
+					counter++;
+					
+				}
+				strPurge = strtok(NULL, " *:,.!?\\/\"\n\t()");
+			}
 	   		/* creating head. If head is already created then program will create node.*/
 	   			if(FIRST == NULL){
-	   				FIRST = createNewNode(counter, de->d_name);
+	   				FIRST = createNewNode(counter, fileContent, de->d_name);
 			   } else{
-			   	insertNode(FIRST, createNewNode(counter, de->d_name));
+			   	insertNode(FIRST, createNewNode(counter, fileContent, de->d_name));
 			   
 			   	unionHeaps(FIRST);
 			   
@@ -282,14 +292,15 @@ int main(void)
 			   }
    				
    			
-			/*printf("\n%d", counter);  */
+			
 	   		fclose(fp);
+	   		
 		}
 	    
 
 	} 
 	int i = 0;
-	while(i<42){
+	while(i<fileCounter){
 	
 		FIRST = popmax(FIRST);
 		if(FIRST != NULL)
